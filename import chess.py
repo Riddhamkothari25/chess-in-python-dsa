@@ -12,12 +12,12 @@ MOVE_MARKER_COLOR = "#87CEEB"
 
 # Piece symbols used in the chessboard
 Piece_symbol = {
-    'P': "\u2659", 'p': "\u265F",
-    'R': "\u2656", 'r': "\u265C",
-    'N': "\u2658", 'n': "\u265E",
-    'B': "\u2657", 'b': "\u265D",
-    'Q': "\u2655", 'q': "\u265B",
-    'K': "\u2654", 'k': "\u265A",
+    'P': "♙", 'p': "♟",
+    'R': "♖", 'r': "♜",
+    'N': "♘", 'n': "♞",
+    'B': "♗", 'b': "♝",
+    'Q': "♕", 'q': "♛",
+    'K': "♔", 'k': "♚",
 }
 
 class ChessApp:
@@ -34,6 +34,7 @@ class ChessApp:
         self.legal_moves = []
         self.turn_timer = 30  # 30 seconds per turn
         self.timer_running = False
+        self.paused = False  # New flag to check if game is paused
 
         self.draw_board()
         self.draw_pieces()
@@ -51,6 +52,9 @@ class ChessApp:
         self.restart_button = tk.Button(self.controls_frame, text="Restart Game", command=self.restart_game)
         self.restart_button.pack(side=tk.LEFT, padx=10)
 
+        self.resume_button = tk.Button(self.controls_frame, text="Resume Game", command=self.resume_game)  # New Button
+        self.resume_button.pack(side=tk.LEFT, padx=10)
+
         self.exit_button = tk.Button(self.controls_frame, text="Exit Game", command=self.exit_game)
         self.exit_button.pack(side=tk.LEFT, padx=10)
 
@@ -62,13 +66,13 @@ class ChessApp:
         self.start_timer()
 
     def start_timer(self):
-        if self.timer_running:
+        if self.timer_running or self.paused:  # Don't start timer if game is paused
             return
         self.timer_running = True
         self.update_timer()
 
     def update_timer(self):
-        if self.turn_timer > 0:
+        if self.turn_timer > 0 and not self.paused:
             self.turn_timer -= 1
             self.timer_label.config(text=f"Time Left: {self.turn_timer}s")
             self.root.after(1000, self.update_timer)
@@ -76,10 +80,10 @@ class ChessApp:
             self.end_turn()
 
     def end_turn(self):
-        # Switch turn to the other player
-        self.turn_timer = 30  # Reset timer to 30 seconds
-        self.draw_board()
-        self.draw_pieces()
+        if not self.paused:
+            self.turn_timer = 30  # Reset timer to 30 seconds
+            self.draw_board()
+            self.draw_pieces()
 
     def draw_board(self):
         # Draw the chessboard with optional highlighting.
@@ -118,6 +122,8 @@ class ChessApp:
             self.canvas.create_text(x, y, text=Piece_symbol[str(piece)], font=("Arial", SQUARE_SIZE // 2))
 
     def on_click(self, event):
+        if self.paused:
+            return  # Ignore clicks if the game is paused
         # Handle mouse click to move pieces.
         col = event.x // SQUARE_SIZE
         row = BOARD_SIZE - 1 - (event.y // SQUARE_SIZE)
@@ -146,6 +152,7 @@ class ChessApp:
         self.selected_square = None
         self.legal_moves = []
         self.turn_timer = 30  # Reset timer
+        self.paused = False  # Ensure game is not paused when starting
         self.draw_board()
         self.draw_pieces()
         self.start_timer()
@@ -156,9 +163,18 @@ class ChessApp:
         self.selected_square = None
         self.legal_moves = []
         self.turn_timer = 30  # Reset timer
+        self.paused = False  # Ensure game is not paused
         self.draw_board()
         self.draw_pieces()
         self.start_timer()
+
+    def resume_game(self):
+        if self.paused:
+            self.paused = False  # Unpause the game
+            self.start_timer()  # Start the timer
+        else:
+            self.paused = True  # Pause the game
+            self.timer_running = False  # Stop the timer
 
     def exit_game(self):
         # Exit the application
