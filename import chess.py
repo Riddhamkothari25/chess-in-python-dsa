@@ -23,7 +23,7 @@ Piece_symbol = {
 class ChessApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chess Visualizer")
+        self.root.title("Chess ")
         self.board = chess.Board()
 
         # Create a canvas for the chessboard
@@ -35,26 +35,19 @@ class ChessApp:
         self.turn_timer = 30  # 30 seconds per turn
         self.timer_running = False
         self.paused = False  # New flag to check if game is paused
-
+        self.game_over = False  # New flag to check if the game is over
         self.draw_board()
         self.draw_pieces()
-
-        # Bind mouse click to handle moves
-        self.canvas.bind("<Button-1>", self.on_click)
 
         # Add control buttons
         self.controls_frame = tk.Frame(root)
         self.controls_frame.pack()
-
         self.start_button = tk.Button(self.controls_frame, text="Start New Game", command=self.start_game)
         self.start_button.pack(side=tk.LEFT, padx=10)
-
         self.restart_button = tk.Button(self.controls_frame, text="Restart Game", command=self.restart_game)
         self.restart_button.pack(side=tk.LEFT, padx=10)
-
-        self.resume_button = tk.Button(self.controls_frame, text="Resume Game", command=self.resume_game)  # New Button
+        self.resume_button = tk.Button(self.controls_frame, text="Resume Game", command=self.resume_game)
         self.resume_button.pack(side=tk.LEFT, padx=10)
-
         self.exit_button = tk.Button(self.controls_frame, text="Exit Game", command=self.exit_game)
         self.exit_button.pack(side=tk.LEFT, padx=10)
 
@@ -62,17 +55,24 @@ class ChessApp:
         self.timer_label = tk.Label(self.controls_frame, text=f"Time Left: {self.turn_timer}s", font=("Arial", 14))
         self.timer_label.pack(side=tk.LEFT, padx=10)
 
+        # Game over label
+        self.game_over_label = tk.Label(self.controls_frame, text="", font=("Arial", 14, "bold"), fg="red")
+        self.game_over_label.pack(side=tk.LEFT, padx=10)
+
         # Start the timer
         self.start_timer()
 
+        # Bind mouse click to handle moves
+        self.canvas.bind("<Button-1>", self.on_click)
+
     def start_timer(self):
-        if self.timer_running or self.paused:  # Don't start timer if game is paused
+        if self.timer_running or self.paused or self.game_over:  # Don't start timer if game is paused or over
             return
         self.timer_running = True
         self.update_timer()
 
     def update_timer(self):
-        if self.turn_timer > 0 and not self.paused:
+        if self.turn_timer > 0 and not self.paused and not self.game_over:
             self.turn_timer -= 1
             self.timer_label.config(text=f"Time Left: {self.turn_timer}s")
             self.root.after(1000, self.update_timer)
@@ -80,7 +80,11 @@ class ChessApp:
             self.end_turn()
 
     def end_turn(self):
-        if not self.paused:
+        if not self.paused and not self.game_over:
+            if self.turn_timer == 0:
+                self.game_over = True
+                self.game_over_label.config(text="Game Over! Time's up!")
+                self.timer_label.config(text="Time's up!")
             self.turn_timer = 30  # Reset timer to 30 seconds
             self.draw_board()
             self.draw_pieces()
@@ -91,11 +95,9 @@ class ChessApp:
             for col in range(BOARD_SIZE):
                 color = LIGHT_COLOR if (row + col) % 2 == 0 else DARK_COLOR
                 square = chess.square(col, BOARD_SIZE - 1 - row)
-
                 # Highlight selected square
                 if self.selected_square == square:
                     color = HIGHLIGHT_COLOR
-
                 x1 = col * SQUARE_SIZE
                 y1 = row * SQUARE_SIZE
                 x2 = x1 + SQUARE_SIZE
@@ -122,13 +124,14 @@ class ChessApp:
             self.canvas.create_text(x, y, text=Piece_symbol[str(piece)], font=("Arial", SQUARE_SIZE // 2))
 
     def on_click(self, event):
-        if self.paused:
-            return  # Ignore clicks if the game is paused
+        if self.paused or self.game_over:
+            return  # Ignore clicks if the game is paused or over
+
         # Handle mouse click to move pieces.
         col = event.x // SQUARE_SIZE
         row = BOARD_SIZE - 1 - (event.y // SQUARE_SIZE)
         clicked_square = chess.square(col, row)
-
+        
         if self.selected_square is None:
             # First click: select a piece
             if self.board.piece_at(clicked_square):
@@ -152,6 +155,8 @@ class ChessApp:
         self.selected_square = None
         self.legal_moves = []
         self.turn_timer = 30  # Reset timer
+        self.game_over = False  # Reset game over flag
+        self.game_over_label.config(text="")  # Clear "Game Over" message
         self.paused = False  # Ensure game is not paused when starting
         self.draw_board()
         self.draw_pieces()
@@ -163,6 +168,8 @@ class ChessApp:
         self.selected_square = None
         self.legal_moves = []
         self.turn_timer = 30  # Reset timer
+        self.game_over = False  # Reset game over flag
+        self.game_over_label.config(text="")  # Clear "Game Over" message
         self.paused = False  # Ensure game is not paused
         self.draw_board()
         self.draw_pieces()
