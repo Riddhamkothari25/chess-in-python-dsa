@@ -1,5 +1,6 @@
 import tkinter as tk
 import chess
+import time
 
 # Constants used for the chessboard
 BOARD_SIZE = 8
@@ -31,6 +32,8 @@ class ChessApp:
 
         self.selected_square = None
         self.legal_moves = []
+        self.turn_timer = 30  # 30 seconds per turn
+        self.timer_running = False
 
         self.draw_board()
         self.draw_pieces()
@@ -50,6 +53,33 @@ class ChessApp:
 
         self.exit_button = tk.Button(self.controls_frame, text="Exit Game", command=self.exit_game)
         self.exit_button.pack(side=tk.LEFT, padx=10)
+
+        # Timer display
+        self.timer_label = tk.Label(self.controls_frame, text=f"Time Left: {self.turn_timer}s", font=("Arial", 14))
+        self.timer_label.pack(side=tk.LEFT, padx=10)
+
+        # Start the timer
+        self.start_timer()
+
+    def start_timer(self):
+        if self.timer_running:
+            return
+        self.timer_running = True
+        self.update_timer()
+
+    def update_timer(self):
+        if self.turn_timer > 0:
+            self.turn_timer -= 1
+            self.timer_label.config(text=f"Time Left: {self.turn_timer}s")
+            self.root.after(1000, self.update_timer)
+        else:
+            self.end_turn()
+
+    def end_turn(self):
+        # Switch turn to the other player
+        self.turn_timer = 30  # Reset timer to 30 seconds
+        self.draw_board()
+        self.draw_pieces()
 
     def draw_board(self):
         # Draw the chessboard with optional highlighting.
@@ -103,6 +133,7 @@ class ChessApp:
             move = chess.Move(self.selected_square, clicked_square)
             if move in self.board.legal_moves:
                 self.board.push(move)
+                self.end_turn()  # End the current player's turn after a valid move
             self.selected_square = None
             self.legal_moves = []
 
@@ -114,16 +145,20 @@ class ChessApp:
         self.board = chess.Board()
         self.selected_square = None
         self.legal_moves = []
+        self.turn_timer = 30  # Reset timer
         self.draw_board()
         self.draw_pieces()
+        self.start_timer()
 
     def restart_game(self):
         # Restart the current game
         self.board.reset()
         self.selected_square = None
         self.legal_moves = []
+        self.turn_timer = 30  # Reset timer
         self.draw_board()
         self.draw_pieces()
+        self.start_timer()
 
     def exit_game(self):
         # Exit the application
